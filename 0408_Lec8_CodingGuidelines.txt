@@ -1,0 +1,43 @@
+RTL Kodlamanýn Temel Düsturlarý
+
+Tepe tasarým bir module'dür.
+Bunun içinde en üst seviyede aslýnda bir devre betimliyoruz. 
+Devre bileþenleri ya always olabilir ya da bir module instance'ý.
+Bir de assign olabilir. Ancak bir assign içi tek satýr olan always @* ile ayný þey.
+
+always bloklarý 2 türdür: always @(posedge clk) ve always @*
+always @(posedge clk) içine sadece "falanca <= #1 falancaNxt;" satýrlarý yazmalýyýz.
+always @*'ýn içine de tüm lojiðimizi.
+
+En sýk hatalar Þunlardýr: 
+
+1. latch (= comb. loop)
+2. multiple driver
+3. multiple-clock design
+4. flip-flop yaratmamak
+
+1. latch problemi:
+
+always @*'ýn tepesinde always @*'ýn çýktýlarýna default assignment'lar yoksa, latch oluþabilir. Bunu engellemek için default assignment'lar koyacaðým always @*'ýn tepesine. (latch inferred: sadece bir warning. keþke error olsaydý. bu arada FF/latch not intialized ve bunun gibi FF/latch warning'leri latch'iniz var demek deðildir. latch yani combinational loop varsa, "latch inferred" warning'i verir. bunun için log'Lara dikkatli bakmanýz lazým.)
+
+2. multiple driver problemi:
+
+ayný sinyal iki farklý always veya bir module instance'ýndan sürülemez (ama okunabilir). multiple driver Xilinx ISE'de error oluþtururken, Xilinx Vivado yazýlýmýnda oluþturmayabiliyor.
+
+3. multiple-clock problemi:
+
+single clock design yapacaksýnýz. o da dýþardan giren veya FPGA'in içindeki bir PLL'den gelen free-running clock olacak. multiple-clock design zorunluluðu varsa bir bilene soracaksýnýz. çünkü multiple-clock'ýn yol açtýðý (timing) problemleri simülasyonda gözükmez, FPGA'de de kimi zaman gözükür.
+
+4. flip-flop yaratmama problemi:
+
+bir variable'a bir clock cycle'da deðer atayýp sonraki bir clock cycle'da kullanýyorsak, o variable'ý bir register'da (yani multi-bit flip-flop) tutmak gerekir. bir variable'ý "reg" olarak deklare edince, onu bir flop'ta store etmiþ olmayýz. flop yaratmak için:
+
+always @(posedge clk) begin
+   var <= #1 varNxt; // var = flop cikisi, varNxt = girisi
+end
+
+yazmak gerekir. bunu yaptýktan sonra da always @*'da (yani algoritmamýzýn olduðu kodda) en tepede:
+
+varNxt = var; // yani default assignment
+
+deyip aþaðýlarda da "varNxt =" dememiz gerekir. 
